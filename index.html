@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>스터디 기록</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ════════════════════════════════
+   TOSS DESIGN SYSTEM
+   ════════════════════════════════ */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#F2F4F6;
+  --surface:#FFFFFF;
+  --surface2:#F9FAFB;
+  --border:#E5E8EB;
+  --text-primary:#191F28;
+  --text-secondary:#6B7684;
+  --text-tertiary:#B0B8C1;
+  --blue:#3182F6;
+  --blue-light:#EBF3FF;
+  --blue-dark:#1B64DA;
+  --green:#00B493;
+  --green-light:#E6F9F5;
+  --red:#F04452;
+  --red-light:#FFF0F0;
+  --yellow:#FFB800;
+  --yellow-light:#FFF8E6;
+  --purple:#7B68EE;
+  --purple-light:#F0EEFF;
+  --radius-lg:16px;
+  --radius-md:12px;
+  --radius-sm:8px;
+  --shadow:0 2px 8px rgba(0,0,0,.06);
+  --shadow-md:0 4px 20px rgba(0,0,0,.1);
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1A1D23;
+  --surface:#252931;
+  --surface2:#2E333D;
+  --border:#3A404D;
+  --text-primary:#F2F4F6;
+  --text-secondary:#8B95A1;
+  --text-tertiary:#4E5968;
+  --blue-light:#1A2A42;
+  --green-light:#0D2E28;
+  --red-light:#2E1518;
+  --yellow-light:#2E2510;
+  --purple-light:#1E1C38;
+  --shadow:0 2px 8px rgba(0,0,0,.3);
+}}
+body{
+  font-family:'Pretendard',system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--text-primary);
+  min-height:100vh;
+  font-size:15px;
+  line-height:1.5;
+}
+
+/* ── LAYOUT ── */
+.app{max-width:480px;margin:0 auto;padding-bottom:90px}
+.page-header{
+  position:sticky;top:0;z-index:100;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding:16px 20px 0;
+}
+.page-title{font-size:20px;font-weight:700;color:var(--text-primary);margin-bottom:12px}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:480px;
+  background:var(--surface);
+  border-top:1px solid var(--border);
+  display:flex;
+  padding:8px 0 env(safe-area-inset-bottom,8px);
+  z-index:200;
+}
+.nav-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:6px 4px;cursor:pointer;border:none;background:none;
+  font-size:10px;font-weight:500;color:var(--text-tertiary);transition:color .15s;
+}
+.nav-item.active{color:var(--blue)}
+.nav-icon{font-size:22px;line-height:1}
+
+/* ── SECTIONS ── */
+.sec{display:none;padding:16px 20px}.sec.active{display:block}
+
+/* ── CARD ── */
+.card{
+  background:var(--surface);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow);
+  padding:20px;
+  margin-bottom:12px;
+}
+.card-title{font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:12px}
+
+/* ── INPUTS ── */
+.input{
+  width:100%;background:var(--surface2);
+  border:1.5px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:13px 14px;font-size:15px;
+  font-family:inherit;color:var(--text-primary);
+  transition:border-color .15s;outline:none;
+}
+.input:focus{border-color:var(--blue)}
+.input::placeholder{color:var(--text-tertiary)}
+.textarea{resize:vertical;min-height:80px;line-height:1.6}
+select.input{cursor:pointer;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7684' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+  padding-right:36px}
+
+/* ── BUTTONS ── */
+.btn{
+  padding:13px 20px;border-radius:var(--radius-md);
+  font-size:15px;font-weight:600;cursor:pointer;
+  border:none;transition:all .15s;font-family:inherit;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:var(--blue-dark)}
+.btn-surface{background:var(--surface2);color:var(--text-primary);border:1.5px solid var(--border)}
+.btn-surface:hover{background:var(--border)}
+.btn-danger{background:var(--red-light);color:var(--red)}
+.btn-sm{padding:8px 14px;font-size:13px;border-radius:var(--radius-sm)}
+.btn-full{width:100%}
+
+/* ── CHIP / BADGE ── */
+.chip{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:4px 10px;border-radius:999px;
+  font-size:12px;font-weight:600;white-space:nowrap;
+}
+
+/* ── TIMER ── */
+.timer-display{
+  font-size:72px;font-weight:300;letter-spacing:-3px;
+  text-align:center;padding:24px 0;
+  font-variant-numeric:tabular-nums;
+  color:var(--text-primary);transition:color .3s;
+}
+.timer-display.running{color:var(--blue)}
+.timer-actions{display:flex;gap:8px;justify-content:center}
+
+/* ── SESSION ITEM ── */
+.session-item{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 0;border-bottom:1px solid var(--border);
+}
+.session-item:last-child{border-bottom:none}
+.session-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.session-info{flex:1;min-width:0}
+.session-time{font-size:17px;font-weight:700}
+.session-meta{font-size:13px;color:var(--text-secondary);margin-top:2px}
+.del-btn{background:none;border:none;cursor:pointer;color:var(--text-tertiary);
+  font-size:20px;padding:4px;border-radius:6px;transition:all .15s;line-height:1}
+.del-btn:hover{color:var(--red);background:var(--red-light)}
+
+/* ── TODO ── */
+.todo-item{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 0;border-bottom:1px solid var(--border);
+  transition:opacity .2s;
+}
+.todo-item:last-child{border-bottom:none}
+.todo-item.done{opacity:.45}
+.check-circle{
+  width:24px;height:24px;border-radius:50%;border:2px solid var(--border);
+  cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;
+}
+.check-circle.checked{background:var(--blue);border-color:var(--blue)}
+.todo-text{flex:1;font-size:15px}
+.todo-item.done .todo-text{text-decoration:line-through;color:var(--text-tertiary)}
+
+/* ── REVIEW CARD ── */
+.review-card-wrap{margin-bottom:10px}
+.review-card{
+  background:var(--surface);border-radius:var(--radius-lg);
+  box-shadow:var(--shadow);cursor:pointer;
+  perspective:1000px;
+}
+.review-inner{
+  transition:transform .4s cubic-bezier(.4,0,.2,1);
+  transform-style:preserve-3d;
+  position:relative;min-height:110px;
+}
+.review-card.flipped .review-inner{transform:rotateY(180deg)}
+.review-front,.review-back{
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  padding:18px 20px;border-radius:var(--radius-lg);
+}
+.review-back{
+  position:absolute;top:0;left:0;right:0;
+  transform:rotateY(180deg);
+  background:var(--green-light);
+}
+.review-question{font-size:16px;font-weight:600;margin-bottom:6px}
+.review-answer{font-size:14px;color:var(--green)}
+.flip-hint{font-size:12px;color:var(--text-tertiary);margin-top:8px}
+.review-actions{display:flex;gap:6px;justify-content:flex-end;margin-top:6px}
+
+/* ── STATS ── */
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat-card{
+  background:var(--surface);border-radius:var(--radius-md);
+  box-shadow:var(--shadow);padding:16px 12px;text-align:center;
+}
+.stat-label{font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:6px}
+.stat-value{font-size:24px;font-weight:800;color:var(--text-primary)}
+.stat-unit{font-size:13px;font-weight:500;color:var(--text-secondary)}
+.week-chart{display:flex;align-items:flex-end;gap:6px;height:100px;margin-bottom:8px}
+.week-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.week-bar{width:100%;border-radius:4px 4px 0 0;min-height:3px;transition:height .5s}
+.week-lbl{font-size:11px;color:var(--text-secondary)}
+.week-val{font-size:10px;color:var(--text-secondary)}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.bar-name{font-size:13px;color:var(--text-secondary);width:48px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:right}
+.bar-track{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .6s ease}
+.bar-val{font-size:12px;color:var(--text-secondary);width:44px}
+.hmap{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.hcell{aspect-ratio:1;border-radius:4px}
+
+/* ── SETTINGS ── */
+.setting-row{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 0;border-bottom:1px solid var(--border);
+}
+.setting-row:last-child{border-bottom:none}
+.subj-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* ── LOADING ── */
+.loading-overlay{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:999;gap:16px;transition:opacity .4s;
+}
+.loading-overlay.hide{opacity:0;pointer-events:none}
+.spinner{
+  width:36px;height:36px;border:3px solid var(--border);
+  border-top-color:var(--blue);border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+  background:var(--text-primary);color:var(--surface);
+  padding:12px 24px;border-radius:999px;font-size:14px;font-weight:500;
+  opacity:0;transition:opacity .2s;pointer-events:none;z-index:999;
+  white-space:nowrap;box-shadow:var(--shadow-md);
+}
+.toast.show{opacity:1}
+
+/* ── EMPTY STATE ── */
+.empty{
+  text-align:center;padding:40px 20px;
+  color:var(--text-tertiary);font-size:14px;
+}
+.empty-icon{font-size:36px;margin-bottom:10px}
+
+/* ── SECTION HEADER ── */
+.sec-header{font-size:13px;font-weight:600;color:var(--text-secondary);
+  margin:16px 0 8px;padding:0 4px}
+
+/* ── DIVIDER ── */
+.divider{height:1px;background:var(--border);margin:0 -20px}
+</style>
+</head>
+<body>
+
+<!-- 로딩 -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div style="font-size:14px;color:var(--text-secondary)">불러오는 중...</div>
+</div>
+
+<div class="app">
+  <!-- 헤더 -->
+  <div class="page-header">
+    <div class="page-title" id="page-title">⏱ 타이머</div>
+
+    <!-- 탭 없음 — 하단 네비 사용 -->
+  </div>
+
+  <!-- ══ TIMER ══ -->
+  <div class="sec active" id="sec-timer">
+    <div class="card" style="margin-top:12px">
+      <div style="margin-bottom:14px">
+        <select class="input" id="t-subj"></select>
+      </div>
+      <div class="timer-display" id="t-disp">00:00:00</div>
+      <div class="timer-actions" style="gap:8px;margin-bottom:14px">
+        <button class="btn btn-primary" id="b-start" onclick="tStart()">▶&nbsp;시작</button>
+        <button class="btn btn-surface" id="b-pause" onclick="tPause()" style="display:none">⏸&nbsp;일시정지</button>
+        <button class="btn btn-surface" id="b-reset" onclick="tReset()" style="display:none">↺&nbsp;리셋</button>
+        <button class="btn btn-danger" id="b-save" onclick="tSave()" style="display:none">저장</button>
+      </div>
+      <textarea class="input textarea" id="t-memo" rows="2" placeholder="메모 (선택 사항)"></textarea>
+    </div>
+
+    <div class="sec-header">오늘의 공부 기록</div>
+    <div class="card" id="today-wrap">
+      <div id="today-list"><div class="empty"><div class="empty-icon">📖</div>아직 기록이 없어요</div></div>
+    </div>
+  </div>
+
+  <!-- ══ TODO ══ -->
+  <div class="sec" id="sec-todo">
+    <div class="card" style="margin-top:12px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <input type="text" class="input" id="todo-in" placeholder="오늘 할 일을 입력해요" onkeydown="if(event.key==='Enter')addTodo()">
+        <div style="display:flex;gap:8px">
+          <select class="input" id="todo-subj" style="flex:1"></select>
+          <button class="btn btn-primary" onclick="addTodo()" style="white-space:nowrap">+ 추가</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec-header">해야 할 일</div>
+    <div class="card"><div id="todo-pending"><div class="empty"><div class="empty-icon">✅</div>다 했어요!</div></div></div>
+    <div id="done-section" style="display:none">
+      <div class="sec-header">완료한 일</div>
+      <div class="card"><div id="todo-done"></div></div>
+    </div>
+  </div>
+
+  <!-- ══ REVIEW ══ -->
+  <div class="sec" id="sec-review">
+    <div class="card" style="margin-top:12px">
+      <div class="card-title">새 복습 카드 만들기</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <select class="input" id="r-subj" style="flex:1;min-width:120px"></select>
+          <div style="display:flex;gap:5px">
+            <button class="btn btn-sm" id="rt-hard" onclick="setRT('hard')">😤 어려워요</button>
+            <button class="btn btn-sm" id="rt-memo" onclick="setRT('memo')">📝 암기</button>
+            <button class="btn btn-sm" id="rt-under" onclick="setRT('under')">💡 이해 부족</button>
+          </div>
+        </div>
+        <input type="text" class="input" id="r-q" placeholder="질문 / 키워드 (예: 미분의 정의)">
+        <textarea class="input textarea" id="r-a" rows="3" placeholder="답 / 설명 (카드 뒤집으면 나와요)"></textarea>
+        <button class="btn btn-primary btn-full" onclick="saveReview()">카드 저장</button>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:12px 0 8px">
+      <div class="sec-header" style="margin:0">복습 카드 목록</div>
+      <div style="display:flex;gap:6px">
+        <select id="rf-type" onchange="renderReviews()" class="input" style="font-size:12px;padding:6px 28px 6px 10px;width:auto">
+          <option value="">전체 유형</option>
+          <option value="hard">어려워요</option>
+          <option value="memo">암기</option>
+          <option value="under">이해 부족</option>
+        </select>
+        <select id="rf-subj" onchange="renderReviews()" class="input" style="font-size:12px;padding:6px 28px 6px 10px;width:auto">
+          <option value="">전체 과목</option>
+        </select>
+      </div>
+    </div>
+    <div id="review-list"></div>
+  </div>
+
+  <!-- ══ STATS ══ -->
+  <div class="sec" id="sec-stats">
+    <div class="stat-grid" style="margin-top:12px" id="sg"></div>
+    <div class="card">
+      <div class="card-title">최근 7일 공부 시간</div>
+      <div class="week-chart" id="wbars"></div>
+      <div style="display:flex;gap:6px" id="wlbls"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">과목별 누적 시간</div>
+      <div id="subj-chart"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">28일 학습 히트맵</div>
+      <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px">진할수록 많이 공부한 날이에요</div>
+      <div class="hmap" id="hmap"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">복습 카드 현황</div>
+      <div id="rev-stats"></div>
+    </div>
+  </div>
+
+  <!-- ══ SETTINGS ══ -->
+  <div class="sec" id="sec-settings">
+    <div class="card" style="margin-top:12px">
+      <div style="font-size:16px;font-weight:700;margin-bottom:14px">과목 관리</div>
+      <div id="subj-list"></div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <div style="display:flex;gap:8px">
+          <input type="text" class="input" id="ns-name" placeholder="새 과목 이름" style="flex:1">
+          <input type="color" id="ns-color" value="#3182F6" style="width:50px;height:48px;border:1.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;background:var(--surface2);padding:3px;flex-shrink:0">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="addSubj()">과목 추가</button>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:16px;font-weight:700;margin-bottom:6px">데이터 초기화</div>
+      <div style="font-size:14px;color:var(--text-secondary);margin-bottom:14px">모든 기록이 삭제돼요. 되돌릴 수 없어요!</div>
+      <button class="btn btn-danger btn-full" onclick="resetAll()">전체 초기화</button>
+    </div>
+  </div>
+</div>
+
+<!-- 하단 네비게이션 -->
+<nav class="bottom-nav">
+  <button class="nav-item active" id="nav-timer" onclick="go('timer')">
+    <span class="nav-icon">⏱</span>타이머
+  </button>
+  <button class="nav-item" id="nav-todo" onclick="go('todo')">
+    <span class="nav-icon">✓</span>할 일
+  </button>
+  <button class="nav-item" id="nav-review" onclick="go('review')">
+    <span class="nav-icon">📌</span>복습
+  </button>
+  <button class="nav-item" id="nav-stats" onclick="go('stats')">
+    <span class="nav-icon">📊</span>통계
+  </button>
+  <button class="nav-item" id="nav-settings" onclick="go('settings')">
+    <span class="nav-icon">⚙</span>설정
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════
+   ⚠️  여기를 수정하세요!
+   Supabase Project URL과 anon key를 입력해요
+   ══════════════════════════════════════════════ */
+const SUPABASE_URL = 'https://bqeleinvcfaifssuwsta.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxZWxlaW52Y2ZhaWZzc3V3c3RhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4Nzk1NTksImV4cCI6MjA5MjQ1NTU1OX0.kH1PC4lp-f_l2dEngrgVF4bBF3ZVaJARDDn9gWEV_J0'
+/* ════════════════════════════════════════════ */
+
+const { createClient } = supabase
+const db = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+// ── 유틸 ───────────────────────────────────────
+const TC = { hard:'#F04452', memo:'#3182F6', under:'#7B68EE' }
+const TL = { hard:'😤 어려워요', memo:'📝 암기', under:'💡 이해 부족' }
+const DK = ['일','월','화','수','목','금','토']
+
+function fmt(s){
+  const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60
+  return [h,m,sc].map(n=>String(n).padStart(2,'0')).join(':')
+}
+function fmtMin(s){
+  const m=Math.round(s/60)
+  return m<60?m+'분':Math.floor(m/60)+'시간 '+(m%60)+'분'
+}
+function today(){ return new Date().toISOString().slice(0,10) }
+function toast(msg){
+  const el=document.getElementById('toast')
+  el.textContent=msg; el.classList.add('show')
+  setTimeout(()=>el.classList.remove('show'),2000)
+}
+function loading(show){
+  document.getElementById('loading').classList.toggle('hide',!show)
+}
+
+// ── 캐시 ───────────────────────────────────────
+let cache = { subjects:[], sessions:[], todos:[], reviews:[] }
+
+function color(name){
+  const s = cache.subjects.find(s=>s.name===name)
+  return s ? safeColor(s.color) : '#888888'
+}
+
+// ── INIT ───────────────────────────────────────
+async function init(){
+  loading(true)
+  try {
+    const [subs,sess,todos,revs] = await Promise.all([
+      db.from('subjects').select('*').order('created_at'),
+      db.from('sessions').select('*').order('created_at',{ascending:false}),
+      db.from('todos').select('*').order('created_at'),
+      db.from('reviews').select('*').order('created_at',{ascending:false})
+    ])
+    cache.subjects = subs.data || []
+    cache.sessions = sess.data || []
+    cache.todos = todos.data || []
+    cache.reviews = revs.data || []
+    fillSelects()
+    renderToday()
+    renderTodos()
+    renderReviews()
+    setRT('hard')
+  } catch(e){
+    console.error(e)
+    alert('⚠️ Supabase 연결 실패!\n\nSUPABASE_URL과 SUPABASE_KEY를 올바르게 입력했는지 확인해주세요.')
+  }
+  loading(false)
+}
+
+// ── SUBJECTS ───────────────────────────────────
+function fillSelects(){
+  const opts = cache.subjects.map(s=>`<option>${s.name}</option>`).join('')
+  ;['t-subj','todo-subj','r-subj'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.innerHTML=opts
+  })
+  const rf=document.getElementById('rf-subj')
+  if(rf) rf.innerHTML='<option value="">전체 과목</option>'+
+    cache.subjects.map(s=>`<option>${s.name}</option>`).join('')
+}
+function safeColor(c){
+  return /^#[0-9a-fA-F]{6}$/.test(c) ? c : '#3182F6'
+}
+function renderSubjList(){
+  document.getElementById('subj-list').innerHTML = cache.subjects.map(s=>{
+    const sc = safeColor(s.color)
+    return `<div class="setting-row" id="srow-${s.id}">
+      <div class="subj-dot" style="background:${sc}"></div>
+      <span style="flex:1;font-size:15px">${s.name}</span>
+      <button class="btn btn-sm btn-surface" onclick="startEditSubj('${s.id}')">✏️ 수정</button>
+      ${cache.subjects.length>1?`<button class="btn btn-sm btn-danger" onclick="delSubj('${s.id}')">삭제</button>`:''}
+    </div>
+    <div id="sedit-${s.id}" style="display:none;padding:10px 0 6px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="color" id="sec-${s.id}" value="${sc}" style="width:42px;height:42px;border:1.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;background:var(--surface2);padding:2px;flex-shrink:0">
+        <input type="text" class="input" id="sen-${s.id}" value="${s.name}" style="flex:1">
+        <button class="btn btn-sm btn-primary" onclick="saveEditSubj('${s.id}')">저장</button>
+        <button class="btn btn-sm btn-surface" onclick="cancelEditSubj('${s.id}')">취소</button>
+      </div>
+    </div>`
+  }).join('')
+}
+function startEditSubj(id){
+  // 다른 열려있는 편집창 닫기
+  cache.subjects.forEach(s=>{
+    if(s.id!==id){
+      document.getElementById('sedit-'+s.id).style.display='none'
+      document.getElementById('srow-'+s.id).style.display=''
+    }
+  })
+  document.getElementById('srow-'+id).style.display='none'
+  document.getElementById('sedit-'+id).style.display=''
+  document.getElementById('sen-'+id).focus()
+}
+function cancelEditSubj(id){
+  document.getElementById('sedit-'+id).style.display='none'
+  document.getElementById('srow-'+id).style.display=''
+}
+async function saveEditSubj(id){
+  const newName=document.getElementById('sen-'+id).value.trim()
+  const newColor=document.getElementById('sec-'+id).value
+  if(!newName){ toast('이름을 입력해주세요'); return }
+  const dup=cache.subjects.find(s=>s.name===newName&&s.id!==id)
+  if(dup){ toast('이미 있는 과목 이름이에요'); return }
+  await db.from('subjects').update({name:newName,color:newColor}).eq('id',id)
+  const s=cache.subjects.find(s=>s.id===id)
+  if(s){ s.name=newName; s.color=newColor }
+  fillSelects(); renderSubjList(); toast('과목이 수정됐어요 ✓')
+}
+async function addSubj(){
+  const name=document.getElementById('ns-name').value.trim()
+  if(!name){ toast('이름을 입력해주세요'); return }
+  if(cache.subjects.find(s=>s.name===name)){ toast('이미 있는 과목이에요'); return }
+  const color=document.getElementById('ns-color').value
+  const {data}=await db.from('subjects').insert({name,color}).select().single()
+  if(data){ cache.subjects.push(data); document.getElementById('ns-name').value=''; fillSelects(); renderSubjList(); toast('과목 추가됨!') }
+}
+async function delSubj(id){
+  if(cache.subjects.length<=1){ toast('과목은 최소 1개 필요해요'); return }
+  const s=cache.subjects.find(s=>s.id===id)
+  if(!confirm(`${s?.name} 과목을 삭제할까요?`)) return
+  await db.from('subjects').delete().eq('id',id)
+  cache.subjects=cache.subjects.filter(s=>s.id!==id)
+  fillSelects(); renderSubjList()
+}
+
+// ── TIMER ───────────────────────────────────────
+let timerSec=0,timerRunning=false,timerIv=null,timerBase=null
+
+function tStart(){
+  if(timerRunning) return
+  timerRunning=true
+  timerBase=Date.now()-timerSec*1000
+  timerIv=setInterval(()=>{
+    timerSec=Math.round((Date.now()-timerBase)/1000)
+    document.getElementById('t-disp').textContent=fmt(timerSec)
+  },500)
+  document.getElementById('t-disp').classList.add('running')
+  document.getElementById('b-start').style.display='none'
+  document.getElementById('b-pause').style.display=''
+  document.getElementById('b-reset').style.display=''
+  document.getElementById('b-save').style.display=''
+}
+function tPause(){
+  if(!timerRunning) return
+  clearInterval(timerIv); timerRunning=false
+  document.getElementById('t-disp').classList.remove('running')
+  document.getElementById('b-pause').style.display='none'
+  const bs=document.getElementById('b-start')
+  bs.style.display=''; bs.textContent='▶ 계속'
+}
+function tReset(){
+  clearInterval(timerIv); timerRunning=false; timerSec=0; timerBase=null
+  document.getElementById('t-disp').textContent='00:00:00'
+  document.getElementById('t-disp').classList.remove('running')
+  const bs=document.getElementById('b-start')
+  bs.style.display=''; bs.textContent='▶ 시작'
+  ;['b-pause','b-reset','b-save'].forEach(id=>document.getElementById(id).style.display='none')
+}
+async function tSave(){
+  if(timerSec<5){ toast('5초 이상 측정해야 저장돼요'); return }
+  clearInterval(timerIv); timerRunning=false
+  const payload={
+    subject_name:document.getElementById('t-subj').value,
+    seconds:timerSec,
+    memo:document.getElementById('t-memo').value,
+    study_date:today()
+  }
+  const {data}=await db.from('sessions').insert(payload).select().single()
+  if(data){
+    cache.sessions.unshift(data)
+    document.getElementById('t-memo').value=''
+    tReset(); renderToday(); toast('저장됐어요 ✓')
+  }
+}
+function renderToday(){
+  const recs=cache.sessions.filter(s=>s.study_date===today())
+  const el=document.getElementById('today-list')
+  if(!recs.length){ el.innerHTML='<div class="empty"><div class="empty-icon">📖</div>오늘 공부한 기록이 없어요</div>'; return }
+  el.innerHTML=recs.map(r=>`
+    <div class="session-item">
+      <div class="session-dot" style="background:${color(r.subject_name)}"></div>
+      <div class="session-info">
+        <div class="session-time">${fmt(r.seconds)}</div>
+        <div class="session-meta">${r.subject_name}${r.memo?` · ${r.memo}`:''}</div>
+      </div>
+      <button class="del-btn" onclick="delSession('${r.id}')">×</button>
+    </div>
+  `).join('')
+}
+async function delSession(id){
+  await db.from('sessions').delete().eq('id',id)
+  cache.sessions=cache.sessions.filter(s=>s.id!==id)
+  renderToday(); toast('삭제됐어요')
+}
+
+// ── TODO ────────────────────────────────────────
+async function addTodo(){
+  const txt=document.getElementById('todo-in').value.trim()
+  if(!txt) return
+  const payload={
+    subject_name:document.getElementById('todo-subj').value,
+    text:txt, done:false, todo_date:today()
+  }
+  const {data}=await db.from('todos').insert(payload).select().single()
+  if(data){ cache.todos.push(data); document.getElementById('todo-in').value=''; renderTodos() }
+}
+async function toggleTodo(id){
+  const t=cache.todos.find(t=>t.id===id); if(!t) return
+  await db.from('todos').update({done:!t.done}).eq('id',id)
+  t.done=!t.done; renderTodos()
+}
+async function delTodo(id){
+  await db.from('todos').delete().eq('id',id)
+  cache.todos=cache.todos.filter(t=>t.id!==id); renderTodos()
+}
+function renderTodos(){
+  const pend=cache.todos.filter(t=>!t.done)
+  const done=cache.todos.filter(t=>t.done)
+  document.getElementById('done-section').style.display=done.length?'':'none'
+  const mkRow=t=>`
+    <div class="todo-item${t.done?' done':''}">
+      <div class="check-circle${t.done?' checked':''}" onclick="toggleTodo('${t.id}')">
+        ${t.done?'<svg width="12" height="10" viewBox="0 0 12 10" fill="none"><path d="M1 5l4 4 6-8" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}
+      </div>
+      <span class="todo-text">${t.text}</span>
+      <span class="chip" style="background:${color(t.subject_name)}22;color:${color(t.subject_name)}">${t.subject_name}</span>
+      <button class="del-btn" onclick="delTodo('${t.id}')">×</button>
+    </div>`
+  document.getElementById('todo-pending').innerHTML=pend.length?pend.map(mkRow).join(''):'<div class="empty"><div class="empty-icon">🎉</div>다 완료했어요!</div>'
+  document.getElementById('todo-done').innerHTML=done.map(mkRow).join('')
+}
+
+// ── REVIEW ──────────────────────────────────────
+let rType='hard'
+function setRT(t){
+  rType=t
+  ;['hard','memo','under'].forEach(k=>{
+    const b=document.getElementById('rt-'+k)
+    if(!b) return
+    if(k===t){ b.style.background=TC[k]; b.style.color='#fff' }
+    else{ b.style.background='var(--surface2)'; b.style.color='var(--text-secondary)' }
+  })
+}
+async function saveReview(){
+  const q=document.getElementById('r-q').value.trim()
+  if(!q){ toast('질문/키워드를 입력해주세요'); return }
+  const payload={
+    subject_name:document.getElementById('r-subj').value,
+    type:rType, question:q,
+    answer:document.getElementById('r-a').value.trim(),
+    mastered:false, review_date:today()
+  }
+  const {data}=await db.from('reviews').insert(payload).select().single()
+  if(data){
+    cache.reviews.unshift(data)
+    document.getElementById('r-q').value=''
+    document.getElementById('r-a').value=''
+    renderReviews(); toast('복습 카드 저장됨 ✓')
+  }
+}
+function toggleFlip(id){
+  document.getElementById('fc-'+id)?.classList.toggle('flipped')
+}
+async function toggleMastered(id){
+  const r=cache.reviews.find(r=>r.id===id); if(!r) return
+  await db.from('reviews').update({mastered:!r.mastered}).eq('id',id)
+  r.mastered=!r.mastered; renderReviews()
+}
+async function delReview(id){
+  await db.from('reviews').delete().eq('id',id)
+  cache.reviews=cache.reviews.filter(r=>r.id!==id)
+  renderReviews(); toast('삭제됐어요')
+}
+function renderReviews(){
+  let list=[...cache.reviews]
+  const tf=document.getElementById('rf-type')?.value
+  const sf=document.getElementById('rf-subj')?.value
+  if(tf) list=list.filter(r=>r.type===tf)
+  if(sf) list=list.filter(r=>r.subject_name===sf)
+  const el=document.getElementById('review-list')
+  if(!list.length){ el.innerHTML='<div class="empty"><div class="empty-icon">📌</div>복습 카드가 없어요</div>'; return }
+  el.innerHTML=list.map(r=>`
+    <div class="review-card-wrap">
+      <div class="review-card" id="fc-${r.id}" onclick="toggleFlip('${r.id}')">
+        <div class="review-inner">
+          <div class="review-front">
+            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">
+              <span class="chip" style="background:${color(r.subject_name)}22;color:${color(r.subject_name)}">${r.subject_name}</span>
+              <span class="chip" style="background:${TC[r.type]}22;color:${TC[r.type]}">${TL[r.type]}</span>
+              ${r.mastered?'<span class="chip" style="background:var(--green-light);color:var(--green)">✓ 완료</span>':''}
+            </div>
+            <div class="review-question">${r.question}</div>
+            <div class="flip-hint">탭해서 답 보기 →</div>
+          </div>
+          <div class="review-back">
+            <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px">✓ 답</div>
+            <div class="review-answer">${r.answer||'(답 없음)'}</div>
+          </div>
+        </div>
+      </div>
+      <div class="review-actions">
+        <button class="btn btn-sm ${r.mastered?'btn-danger':'btn-surface'}" onclick="event.stopPropagation();toggleMastered('${r.id}')">
+          ${r.mastered?'복습 취소':'✓ 완료 표시'}
+        </button>
+        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();delReview('${r.id}')">삭제</button>
+      </div>
+    </div>
+  `).join('')
+}
+
+// ── STATS ────────────────────────────────────────
+function renderStats(){
+  const sess=cache.sessions, todos=cache.todos, revs=cache.reviews
+  const totalSec=sess.reduce((a,s)=>a+s.seconds,0)
+  const todaySec=sess.filter(s=>s.study_date===today()).reduce((a,s)=>a+s.seconds,0)
+  document.getElementById('sg').innerHTML=`
+    <div class="stat-card">
+      <div class="stat-label">총 공부 시간</div>
+      <div class="stat-value">${Math.round(totalSec/60)}<span class="stat-unit">분</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">오늘 공부</div>
+      <div class="stat-value" style="color:var(--blue)">${Math.round(todaySec/60)}<span class="stat-unit">분</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">완료 할 일</div>
+      <div class="stat-value" style="color:var(--green)">${todos.filter(t=>t.done).length}<span class="stat-unit">개</span></div>
+    </div>`
+
+  const last7=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return d.toISOString().slice(0,10)})
+  const byDay={}
+  sess.forEach(s=>{byDay[s.study_date]=(byDay[s.study_date]||0)+s.seconds})
+  const maxD=Math.max(...last7.map(d=>byDay[d]||0),1)
+  document.getElementById('wbars').innerHTML=last7.map(d=>{
+    const sec=byDay[d]||0,h=Math.round(sec/maxD*80),isT=d===today()
+    return `<div class="week-col">
+      <div class="week-val" style="height:18px">${sec?Math.round(sec/60)+'분':''}</div>
+      <div class="week-bar" style="height:${h}px;background:${isT?'var(--blue)':'#90C5FF'}"></div>
+    </div>`
+  }).join('')
+  document.getElementById('wlbls').innerHTML=last7.map(d=>{
+    const dt=new Date(d),isT=d===today()
+    return `<div style="flex:1;text-align:center;font-size:11px;font-weight:${isT?700:400};color:${isT?'var(--blue)':'var(--text-secondary)'}">${DK[dt.getDay()]}</div>`
+  }).join('')
+
+  const bySubj={}
+  sess.forEach(s=>{bySubj[s.subject_name]=(bySubj[s.subject_name]||0)+s.seconds})
+  const maxS=Math.max(...Object.values(bySubj),1)
+  document.getElementById('subj-chart').innerHTML=Object.keys(bySubj).length?
+    Object.entries(bySubj).sort((a,b)=>b[1]-a[1]).map(([name,sec])=>`
+      <div class="bar-row">
+        <div class="bar-name">${name}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(sec/maxS*100)}%;background:${color(name)}"></div></div>
+        <div class="bar-val">${fmtMin(sec)}</div>
+      </div>`).join(''):
+    '<div class="empty">공부 기록이 없어요</div>'
+
+  const d28=Array.from({length:28},(_,i)=>{const d=new Date();d.setDate(d.getDate()-27+i);return d.toISOString().slice(0,10)})
+  const maxH=Math.max(...d28.map(d=>byDay[d]||0),1)
+  document.getElementById('hmap').innerHTML=d28.map(d=>{
+    const sec=byDay[d]||0,a=sec?Math.max(.2,sec/maxH):.06
+    return `<div class="hcell" title="${d}: ${fmtMin(sec)}" style="background:rgba(49,130,246,${a})"></div>`
+  }).join('')
+
+  const rc={hard:0,memo:0,under:0,mastered:0}
+  revs.forEach(r=>{rc[r.type]=(rc[r.type]||0)+1;if(r.mastered)rc.mastered++})
+  document.getElementById('rev-stats').innerHTML=
+    `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+    ${[['hard','어려워요','#F04452'],['memo','암기','#3182F6'],['under','이해 부족','#7B68EE'],['mastered','완료','#00B493']].map(([k,l,c])=>
+      `<div class="stat-card"><div class="stat-label">${l}</div><div class="stat-value" style="font-size:20px;color:${c}">${rc[k]||0}<span class="stat-unit">개</span></div></div>`
+    ).join('')}</div>`
+}
+
+// ── NAV ──────────────────────────────────────────
+const PAGE_TITLES = { timer:'⏱ 타이머', todo:'✓ 할 일', review:'📌 복습', stats:'📊 통계', settings:'⚙ 설정' }
+const PAGES = ['timer','todo','review','stats','settings']
+function go(id){
+  PAGES.forEach(p=>{
+    document.getElementById('nav-'+p).classList.toggle('active',p===id)
+    document.getElementById('sec-'+p).classList.toggle('active',p===id)
+  })
+  document.getElementById('page-title').textContent=PAGE_TITLES[id]
+  if(id==='stats') renderStats()
+  if(id==='settings') renderSubjList()
+}
+
+async function resetAll(){
+  if(!confirm('정말 모든 기록을 삭제할까요? 되돌릴 수 없어요!')) return
+  await Promise.all([
+    db.from('sessions').delete().neq('id','00000000-0000-0000-0000-000000000000'),
+    db.from('todos').delete().neq('id','00000000-0000-0000-0000-000000000000'),
+    db.from('reviews').delete().neq('id','00000000-0000-0000-0000-000000000000')
+  ])
+  cache.sessions=[]; cache.todos=[]; cache.reviews=[]
+  renderToday(); renderTodos(); renderReviews(); toast('초기화 완료')
+}
+
+// ── START ─────────────────────────────────────────
+init()
+</script>
+</body>
+</html>
