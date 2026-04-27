@@ -160,6 +160,7 @@ select.input{cursor:pointer;appearance:none;background-image:url("data:image/svg
 
   <!-- ══ TIMER ══ -->
   <div class="sec active" id="sec-timer">
+    <!-- 타이머 -->
     <div class="card" style="margin-top:12px">
       <div style="margin-bottom:14px">
         <select class="input" id="t-subj"></select>
@@ -173,7 +174,43 @@ select.input{cursor:pointer;appearance:none;background-image:url("data:image/svg
       </div>
       <textarea class="input textarea" id="t-memo" rows="2" placeholder="메모 (선택 사항)"></textarea>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px;padding:0 4px">
+
+    <!-- 직접 입력 -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="card-title" style="margin:0">✍️ 기록 직접 추가</div>
+        <button class="btn btn-sm btn-surface" onclick="toggleManual()" id="manual-toggle">펼치기</button>
+      </div>
+      <div id="manual-form" style="display:none;flex-direction:column;gap:8px">
+        <div>
+          <div class="edit-label">날짜</div>
+          <input type="date" class="input" id="m-date" style="margin-top:4px">
+        </div>
+        <div>
+          <div class="edit-label">과목</div>
+          <select class="input" id="m-subj" style="margin-top:4px"></select>
+        </div>
+        <div>
+          <div class="edit-label">공부 시간</div>
+          <div class="time-inputs" style="margin-top:4px">
+            <input class="time-input" id="m-h" type="number" min="0" max="23" value="0" placeholder="00">
+            <span class="time-sep">:</span>
+            <input class="time-input" id="m-m" type="number" min="0" max="59" value="0" placeholder="00">
+            <span class="time-sep">:</span>
+            <input class="time-input" id="m-s" type="number" min="0" max="59" value="0" placeholder="00">
+          </div>
+          <div style="font-size:11px;color:var(--text-tertiary);margin-top:5px">시간 : 분 : 초</div>
+        </div>
+        <div>
+          <div class="edit-label">메모</div>
+          <input type="text" class="input" id="m-memo" placeholder="메모 (선택)" style="margin-top:4px">
+        </div>
+        <button class="btn btn-primary btn-full" onclick="addManualSession()">추가</button>
+      </div>
+    </div>
+
+    <!-- 기록 목록 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:4px 0 8px;padding:0 4px">
       <div class="sec-header" style="margin:0">공부 기록</div>
       <div style="display:flex;gap:6px;align-items:center">
         <select id="hist-subj-filter" onchange="renderSessions()" class="input" style="font-size:12px;padding:6px 28px 6px 10px;width:auto">
@@ -354,7 +391,7 @@ async function init(){
 // ── SUBJECTS ──
 function fillSelects(){
   const opts=cache.subjects.map(s=>`<option>${s.name}</option>`).join('')
-  ;['t-subj','todo-subj','r-subj'].forEach(id=>{
+  ;['t-subj','todo-subj','r-subj','m-subj'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.innerHTML=opts
   })
   const rf=document.getElementById('rf-subj')
@@ -450,6 +487,46 @@ async function tSave(){
   const payload={ subject_name:document.getElementById('t-subj').value, seconds:timerSec, memo:document.getElementById('t-memo').value, study_date:today() }
   const {data}=await db.from('sessions').insert(payload).select().single()
   if(data){ cache.sessions.unshift(data); document.getElementById('t-memo').value=''; tReset(); renderSessions(); toast('저장됐어요 ✓') }
+}
+
+// ── MANUAL ENTRY ──
+function toggleManual(){
+  const form=document.getElementById('manual-form')
+  const btn=document.getElementById('manual-toggle')
+  const isOpen=form.style.display==='flex'
+  form.style.display=isOpen?'none':'flex'
+  btn.textContent=isOpen?'펼치기':'접기'
+  if(!isOpen){
+    // 날짜 기본값: 오늘
+    document.getElementById('m-date').value=today()
+    document.getElementById('m-h').value=0
+    document.getElementById('m-m').value=0
+    document.getElementById('m-s').value=0
+    document.getElementById('m-memo').value=''
+  }
+}
+async function addManualSession(){
+  const date=document.getElementById('m-date').value
+  if(!date){ toast('날짜를 선택해주세요'); return }
+  const h=parseInt(document.getElementById('m-h').value)||0
+  const m=parseInt(document.getElementById('m-m').value)||0
+  const s=parseInt(document.getElementById('m-s').value)||0
+  const sec=h*3600+m*60+s
+  if(sec<5){ toast('5초 이상 입력해주세요'); return }
+  const payload={
+    subject_name:document.getElementById('m-subj').value,
+    seconds:sec,
+    memo:document.getElementById('m-memo').value,
+    study_date:date
+  }
+  const {data,error}=await db.from('sessions').insert(payload).select().single()
+  if(error){ toast('저장 실패 😢'); return }
+  cache.sessions.unshift(data)
+  // 날짜순 재정렬
+  cache.sessions.sort((a,b)=>b.study_date.localeCompare(a.study_date)||b.id.localeCompare(a.id))
+  toggleManual()
+  renderSessions()
+  toast('기록이 추가됐어요 ✓')
 }
 
 // ── SESSION RENDER + EDIT ──
